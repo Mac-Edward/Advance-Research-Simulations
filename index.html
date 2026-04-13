@@ -1,0 +1,1742 @@
+# Advance-Research-Simulations
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StratLab — Open-Response Game Theory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════
+   DESIGN: Academic Notebook — Ink + Warm Paper
+   Refined, editorial, textbook-meets-interactive
+══════════════════════════════════════════════════ */
+:root {
+  --paper:       #faf8f3;
+  --paper-warm:  #f4f0e6;
+  --paper-dark:  #ede7d9;
+  --ink:         #1c1a17;
+  --ink-mid:     #3d3a35;
+  --ink-light:   #6b6660;
+  --ink-faint:   #a09890;
+  --rule:        #ddd5c5;
+  --rule-light:  #ece7dd;
+  --crimson:     #8b1a1a;
+  --crimson-bg:  #fdf0f0;
+  --crimson-mid: #c0392b;
+  --forest:      #1a5c35;
+  --forest-bg:   #edf7f1;
+  --gold:        #b5830a;
+  --gold-bg:     #fdf8ec;
+  --gold-border: #e6c44a;
+  --cobalt:      #1a3a6b;
+  --cobalt-bg:   #edf2fb;
+  --cobalt-light:#4a6fa5;
+  --margin-bg:   #f0ece2;
+  --annot:       #7a5c00;
+  --radius:      6px;
+  --radius-lg:   12px;
+  --shadow-sm:   0 1px 4px rgba(28,26,23,0.08);
+  --shadow:      0 3px 14px rgba(28,26,23,0.11);
+  --shadow-lg:   0 8px 32px rgba(28,26,23,0.16);
+  --font-serif:  'Lora', Georgia, serif;
+  --font-sans:   'Outfit', sans-serif;
+  --font-mono:   'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.65;
+  /* subtle grid lines */
+  background-image: repeating-linear-gradient(
+    0deg, transparent, transparent 27px, var(--rule-light) 27px, var(--rule-light) 28px
+  );
+  background-attachment: fixed;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--paper-warm); }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 3px; }
+
+/* ── HEADER ── */
+header {
+  background: var(--ink);
+  padding: 0 40px;
+  height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 300;
+  border-bottom: 3px solid var(--gold-border);
+}
+.logo-wrap { display: flex; align-items: center; gap: 14px; }
+.logo-mark {
+  font-family: var(--font-serif);
+  font-size: 22px; font-weight: 700;
+  color: var(--gold-border);
+  letter-spacing: -0.01em;
+}
+.logo-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.15); }
+.logo-sub {
+  font-size: 11px; font-weight: 400;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.header-tabs {
+  display: flex; gap: 2px;
+  background: rgba(255,255,255,0.06);
+  padding: 4px; border-radius: var(--radius);
+}
+.htab {
+  font-family: var(--font-sans);
+  font-size: 13px; font-weight: 500;
+  padding: 6px 18px; border-radius: 4px;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer; border: none; background: transparent;
+  transition: all 0.18s; letter-spacing: 0.02em;
+}
+.htab.active { background: var(--gold-border); color: var(--ink); font-weight: 600; }
+.htab:hover:not(.active) { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.08); }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.hbtn {
+  font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+  padding: 7px 16px; border-radius: var(--radius); cursor: pointer;
+  transition: all 0.15s; letter-spacing: 0.03em;
+}
+.hbtn-ghost { background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.65); }
+.hbtn-ghost:hover { border-color: var(--gold-border); color: var(--gold-border); }
+.hbtn-solid { background: var(--gold-border); border: none; color: var(--ink); font-weight: 600; }
+.hbtn-solid:hover { background: #f0d060; }
+
+/* ── PANELS ── */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── LAYOUT WRAPPER ── */
+.page { max-width: 1160px; margin: 0 auto; padding: 40px 24px 80px; }
+
+/* ── NOTEBOOK LAYOUT: left margin strip + content ── */
+.notebook {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 0;
+  position: relative;
+}
+.notebook::before {
+  content: '';
+  position: absolute;
+  left: 56px; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--crimson) 0%, rgba(139,26,26,0.3) 100%);
+  opacity: 0.5;
+}
+.nb-margin {
+  padding-top: 6px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 32px;
+}
+.nb-num {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+.nb-body { padding-left: 28px; }
+
+/* ── PAGE TITLE ── */
+.page-title {
+  font-family: var(--font-serif);
+  font-size: 32px; font-weight: 700;
+  color: var(--ink); margin-bottom: 6px;
+  line-height: 1.25;
+}
+.page-subtitle {
+  font-size: 15px; color: var(--ink-light);
+  margin-bottom: 36px; font-style: italic;
+  font-family: var(--font-serif);
+}
+
+/* ── CARDS ── */
+.card {
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+.card-title {
+  font-family: var(--font-serif);
+  font-size: 17px; font-weight: 600;
+  color: var(--ink); margin-bottom: 4px;
+}
+.card-sub { font-size: 13px; color: var(--ink-light); margin-bottom: 18px; font-style: italic; }
+
+/* ── FORM ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.form-row.full { grid-template-columns: 1fr; }
+.form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--ink-light);
+}
+.field input, .field select, .field textarea {
+  font-family: var(--font-sans);
+  font-size: 14px; color: var(--ink);
+  background: var(--paper-warm);
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 9px 13px;
+  outline: none;
+  transition: border-color 0.18s, background 0.18s;
+}
+.field textarea { resize: vertical; min-height: 110px; line-height: 1.65; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--cobalt-light);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(74,111,165,0.1);
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+  padding: 11px 26px; border-radius: var(--radius);
+  cursor: pointer; border: none; transition: all 0.17s;
+}
+.btn-ink { background: var(--ink); color: var(--paper); }
+.btn-ink:hover { background: var(--ink-mid); transform: translateY(-1px); box-shadow: var(--shadow); }
+.btn-gold { background: var(--gold-border); color: var(--ink); }
+.btn-gold:hover { background: #f0d060; transform: translateY(-1px); }
+.btn-outline { background: transparent; color: var(--ink); border: 1.5px solid var(--rule); }
+.btn-outline:hover { border-color: var(--ink-mid); background: var(--paper-warm); }
+.btn-sm { padding: 7px 16px; font-size: 12px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+/* ── DIVIDER ── */
+hr.rule { border: none; border-top: 1px solid var(--rule); margin: 20px 0; }
+
+/* ── PAYOFF MATRIX ── */
+.matrix-wrap { overflow-x: auto; margin: 14px 0; }
+table.pmatrix {
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  width: 100%;
+}
+table.pmatrix th, table.pmatrix td {
+  border: 1.5px solid var(--rule);
+  text-align: center;
+}
+.mx-corner { background: var(--ink); width: 110px; min-width: 90px; }
+.mx-col-player {
+  background: var(--ink); color: var(--gold-border);
+  font-family: var(--font-serif); font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 8px;
+}
+.mx-col-hd {
+  background: var(--ink-mid); color: #fff;
+  font-size: 12px; font-weight: 600;
+  padding: 10px 14px; letter-spacing: 0.03em;
+}
+.mx-row-player {
+  background: var(--ink); color: var(--gold-border);
+  font-family: var(--font-serif); font-size: 11px;
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  text-transform: uppercase; padding: 8px;
+}
+.mx-row-hd {
+  background: var(--ink-mid); color: #fff;
+  font-size: 12px; font-weight: 600;
+  padding: 10px 12px; text-align: left;
+}
+.mx-cell {
+  background: #fff; padding: 14px 12px;
+  min-width: 130px; position: relative;
+}
+.mx-cell.nash { background: var(--forest-bg); outline: 2px solid var(--forest); outline-offset: -2px; }
+.payoff-nums {
+  font-family: var(--font-mono); font-size: 15px; font-weight: 500;
+  display: flex; gap: 5px; justify-content: center; align-items: center;
+}
+.pn1 { color: var(--cobalt); }
+.pn2 { color: var(--crimson); }
+.payoff-sep { color: var(--ink-faint); font-size: 12px; }
+.payoff-lbl { font-size: 10px; color: var(--ink-faint); margin-top: 4px; }
+.nash-tag {
+  font-size: 9px; font-weight: 700; color: var(--forest);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  margin-top: 5px;
+}
+
+/* ══════════════════════════════════
+   STUDENT RESPONSE ZONE
+══════════════════════════════════ */
+.response-section {
+  background: var(--paper-warm);
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.response-header {
+  background: var(--ink);
+  padding: 14px 22px;
+  display: flex; align-items: center; gap: 10px;
+}
+.response-header-title {
+  font-family: var(--font-serif);
+  font-size: 15px; font-weight: 600; color: #fff;
+}
+.response-header-badge {
+  font-family: var(--font-mono);
+  font-size: 10px; padding: 3px 8px;
+  background: rgba(230,196,74,0.15);
+  border: 1px solid rgba(230,196,74,0.4);
+  color: var(--gold-border); border-radius: 3px;
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.response-body { padding: 20px 22px; }
+
+/* Individual question block */
+.q-block {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px dashed var(--rule);
+}
+.q-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.q-number {
+  font-family: var(--font-serif);
+  font-size: 11px; font-weight: 700; color: var(--crimson);
+  text-transform: uppercase; letter-spacing: 0.12em;
+  margin-bottom: 5px;
+}
+.q-text {
+  font-family: var(--font-serif);
+  font-size: 15px; color: var(--ink);
+  margin-bottom: 10px; line-height: 1.6;
+  font-style: italic;
+}
+.q-hint {
+  font-size: 12px; color: var(--ink-light);
+  margin-bottom: 10px; line-height: 1.5;
+  padding: 8px 12px; background: #fff;
+  border-left: 3px solid var(--gold-border);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.q-textarea {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 14px; color: var(--ink);
+  background: #fff;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  resize: vertical; min-height: 90px;
+  line-height: 1.7; outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.q-textarea:focus {
+  border-color: var(--cobalt-light);
+  box-shadow: 0 0 0 3px rgba(74,111,165,0.1);
+}
+.q-textarea::placeholder { color: var(--ink-faint); font-style: italic; }
+.q-word-count {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--ink-faint);
+  text-align: right; margin-top: 4px;
+}
+
+/* Strategy selector (still present but as a supplement) */
+.strategy-selector {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.strat-chip {
+  padding: 8px 18px;
+  font-size: 13px; font-weight: 500;
+  border: 1.5px solid var(--rule);
+  border-radius: 24px;
+  cursor: pointer; transition: all 0.18s;
+  background: #fff; color: var(--ink-mid);
+}
+.strat-chip:hover { border-color: var(--cobalt-light); color: var(--cobalt); }
+.strat-chip.selected { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+/* Submit bar */
+.submit-bar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 22px;
+  background: var(--paper-dark);
+  border-top: 1px solid var(--rule);
+}
+.submit-bar-note {
+  font-size: 12px; color: var(--ink-light);
+  font-style: italic; flex: 1;
+}
+.completion-bar-wrap {
+  flex: 1; height: 4px; background: var(--rule);
+  border-radius: 2px; overflow: hidden;
+}
+.completion-bar {
+  height: 100%; background: var(--forest);
+  border-radius: 2px; transition: width 0.4s ease;
+  width: 0%;
+}
+
+/* ══════════════════════════════════
+   FEEDBACK / DEVIATION ANALYSIS
+══════════════════════════════════ */
+.feedback-panel { display: none; }
+.feedback-panel.visible { display: block; }
+
+/* Overall alignment meter */
+.alignment-meter {
+  background: var(--ink);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+.alignment-meter::after {
+  content: '∑';
+  position: absolute; right: 28px; top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-serif);
+  font-size: 100px; color: rgba(255,255,255,0.04);
+  line-height: 1;
+}
+.am-label {
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.4); margin-bottom: 10px;
+}
+.am-title {
+  font-family: var(--font-serif);
+  font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 16px;
+}
+.am-track {
+  height: 10px; background: rgba(255,255,255,0.1);
+  border-radius: 5px; overflow: hidden; margin-bottom: 10px;
+}
+.am-fill {
+  height: 100%; border-radius: 5px;
+  transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  width: 0%;
+}
+.am-fill.tier-expert { background: linear-gradient(90deg, #2d7a4f, #5bc88a); }
+.am-fill.tier-advanced { background: linear-gradient(90deg, #1a5c8b, #4a9fd4); }
+.am-fill.tier-intermediate { background: linear-gradient(90deg, #b5830a, #e6c44a); }
+.am-fill.tier-beginner { background: linear-gradient(90deg, #8b1a1a, #d45c5c); }
+.am-stats {
+  display: flex; gap: 24px; flex-wrap: wrap; margin-top: 14px;
+}
+.am-stat { }
+.am-stat-num {
+  font-family: var(--font-mono);
+  font-size: 22px; font-weight: 500; color: var(--gold-border);
+  line-height: 1;
+}
+.am-stat-lbl {
+  font-size: 11px; color: rgba(255,255,255,0.45);
+  margin-top: 2px; letter-spacing: 0.06em;
+}
+
+/* Per-question feedback cards */
+.qfeed-grid { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+.qfeed-card {
+  background: #fff;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  animation: slideUp 0.4s ease both;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.qfeed-card:nth-child(2) { animation-delay: 0.1s; }
+.qfeed-card:nth-child(3) { animation-delay: 0.2s; }
+.qfeed-card:nth-child(4) { animation-delay: 0.3s; }
+.qfeed-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-warm);
+}
+.qfeed-num {
+  font-family: var(--font-serif);
+  font-size: 11px; font-weight: 700; color: var(--crimson);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.qfeed-q { font-size: 14px; font-weight: 600; color: var(--ink); flex: 1; }
+.deviation-badge {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 24px;
+  font-size: 12px; font-weight: 600; flex-shrink: 0;
+}
+.dev-on-track { background: var(--forest-bg); color: var(--forest); border: 1px solid var(--forest); }
+.dev-close { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+.dev-partial { background: var(--cobalt-bg); color: var(--cobalt); border: 1px solid var(--cobalt-light); }
+.dev-off-track { background: var(--crimson-bg); color: var(--crimson); border: 1px solid var(--crimson-mid); }
+
+.qfeed-body { padding: 18px 20px; }
+
+/* Student answer display */
+.student-answer-block {
+  background: var(--cobalt-bg);
+  border: 1px solid rgba(74,111,165,0.25);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  position: relative;
+}
+.sab-label {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--cobalt-light); margin-bottom: 6px;
+}
+.sab-text { font-size: 14px; color: var(--ink-mid); line-height: 1.65; font-style: italic; }
+
+/* GT optimal answer */
+.optimal-block {
+  background: var(--forest-bg);
+  border: 1px solid rgba(26,92,53,0.25);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.ob-label {
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--forest); margin-bottom: 6px;
+}
+.ob-text { font-size: 14px; color: var(--ink-mid); line-height: 1.65; }
+
+/* Deviation analysis */
+.deviation-analysis {
+  background: var(--paper-warm);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.da-title {
+  font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--ink-light); margin-bottom: 8px;
+}
+.da-points { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.da-point {
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 13px; color: var(--ink-mid); line-height: 1.55;
+}
+.da-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+/* Concept tags matched */
+.concept-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.ctag {
+  font-size: 11px; padding: 3px 10px;
+  border-radius: 20px; font-weight: 500;
+}
+.ctag-hit { background: var(--forest-bg); color: var(--forest); border: 1px solid rgba(26,92,53,0.3); }
+.ctag-miss { background: var(--crimson-bg); color: var(--crimson); border: 1px solid rgba(139,26,26,0.2); }
+.ctag-partial { background: var(--gold-bg); color: var(--gold); border: 1px solid var(--gold-border); }
+
+/* Correction/guidance section */
+.guidance-block {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px dashed var(--rule);
+}
+.guidance-title {
+  font-family: var(--font-serif);
+  font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 6px;
+}
+.guidance-text { font-size: 13px; color: var(--ink-mid); line-height: 1.7; }
+
+/* GT theory reveal */
+.theory-reveal {
+  background: var(--ink);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px; margin-bottom: 20px;
+  border-left: 4px solid var(--gold-border);
+}
+.tr-label { font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+.tr-title { font-family: var(--font-serif); font-size: 20px; color: var(--gold-border); font-weight: 700; margin-bottom: 12px; }
+.tr-text { font-size: 14px; color: rgba(255,255,255,0.72); line-height: 1.8; }
+.tr-text strong { color: var(--gold-border); font-weight: 600; }
+
+/* Learning objective */
+.learning-obj-card {
+  background: var(--gold-bg);
+  border: 1.5px solid var(--gold-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px; margin-bottom: 20px;
+}
+.lobj-label { font-family: var(--font-mono); font-size: 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px; }
+.lobj-text { font-family: var(--font-serif); font-size: 15px; color: var(--ink); font-style: italic; line-height: 1.65; }
+
+/* ── CASE BANNER ── */
+.case-banner {
+  background: var(--ink);
+  border-radius: var(--radius-lg);
+  padding: 24px 30px; margin-bottom: 24px;
+  border-bottom: 3px solid var(--gold-border);
+  position: relative; overflow: hidden;
+}
+.case-banner::before {
+  content: '"';
+  position: absolute; right: 20px; top: 10px;
+  font-family: var(--font-serif);
+  font-size: 120px; color: rgba(255,255,255,0.04);
+  line-height: 1;
+}
+.cb-eyebrow {
+  font-family: var(--font-mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.15em;
+  color: var(--gold-border); margin-bottom: 8px;
+}
+.cb-title { font-family: var(--font-serif); font-size: 22px; color: #fff; font-weight: 700; margin-bottom: 10px; }
+.cb-desc { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.7; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 999;
+  background: var(--ink); color: #fff;
+  padding: 11px 20px; border-radius: var(--radius);
+  font-size: 13px; border-left: 3px solid var(--gold-border);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(16px); opacity: 0;
+  transition: all 0.3s; pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* ── PROCESSING ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(28,26,23,0.7);
+  z-index: 600; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+.overlay.show { display: flex; }
+.ov-spinner {
+  width: 46px; height: 46px;
+  border: 3px solid rgba(230,196,74,0.25);
+  border-top-color: var(--gold-border);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ov-text { font-family: var(--font-serif); font-size: 15px; color: #fff; font-style: italic; }
+
+/* ── SAVED CASES LIBRARY ── */
+.lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lib-card {
+  background: #fff; border: 1.5px solid var(--rule);
+  border-radius: var(--radius-lg); padding: 18px 20px;
+  cursor: pointer; transition: all 0.18s;
+  box-shadow: var(--shadow-sm);
+}
+.lib-card:hover { border-color: var(--cobalt-light); transform: translateY(-2px); box-shadow: var(--shadow); }
+.lib-card-name { font-family: var(--font-serif); font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.lib-card-meta { font-size: 11px; color: var(--ink-faint); margin-bottom: 8px; }
+.lib-card-desc { font-size: 13px; color: var(--ink-light); line-height: 1.5; }
+
+/* ── NO-SIM PLACEHOLDER ── */
+.no-sim {
+  text-align: center; padding: 64px 24px;
+  background: #fff; border: 1.5px dashed var(--rule);
+  border-radius: var(--radius-lg);
+}
+.no-sim-icon { font-size: 52px; margin-bottom: 16px; }
+.no-sim-title { font-family: var(--font-serif); font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.no-sim-sub { font-size: 14px; color: var(--ink-light); font-style: italic; margin-bottom: 24px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 880px) {
+  header { padding: 0 16px; }
+  .logo-divider, .logo-sub { display: none; }
+  .page { padding: 24px 14px 60px; }
+  .form-row, .form-row.three { grid-template-columns: 1fr; }
+  .lib-grid { grid-template-columns: 1fr; }
+  .notebook { grid-template-columns: 1fr; }
+  .notebook::before { display: none; }
+  .nb-margin { display: none; }
+  .nb-body { padding-left: 0; }
+  .am-stats { gap: 14px; }
+}
+@media (max-width: 540px) {
+  .htab { padding: 6px 10px; font-size: 12px; }
+  .page-title { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="ov-spinner"></div>
+  <div class="ov-text">Analysing your reasoning…</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- ══════ HEADER ══════ -->
+<header>
+  <div class="logo-wrap">
+    <div class="logo-mark">StratLab</div>
+    <div class="logo-divider"></div>
+    <div class="logo-sub">Open-Response Game Theory</div>
+  </div>
+  <div class="header-tabs">
+    <button class="htab active" id="tab-teacher" onclick="switchPanel('teacher')">✏️ Teacher</button>
+    <button class="htab" id="tab-student" onclick="switchPanel('student')">📝 Student</button>
+    <button class="htab" id="tab-library" onclick="switchPanel('library')">📚 Library</button>
+  </div>
+  <div class="header-right">
+    <button class="hbtn hbtn-ghost" onclick="saveCase()">Save Case</button>
+    <button class="hbtn hbtn-solid" onclick="loadDemo()">Load Demo</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     TEACHER PANEL
+══════════════════════════════════════════ -->
+<div class="panel active" id="panel-teacher">
+<div class="page">
+  <div class="page-title">Case Study Builder</div>
+  <div class="page-subtitle">Define the scenario, players, and payoffs — the engine generates open-response questions calibrated to game theory optima.</div>
+
+  <div class="card">
+    <div class="card-title">Case Metadata</div>
+    <div class="card-sub">Basic identification and context</div>
+    <div class="form-row three">
+      <div class="field"><label>Case Name</label><input id="t-name" value="Airline Pricing War"/></div>
+      <div class="field"><label>Category</label>
+        <select id="t-cat">
+          <option value="pricing">Pricing</option>
+          <option value="strategy">Strategy</option>
+          <option value="negotiation">Negotiation</option>
+          <option value="operations">Operations</option>
+          <option value="finance">Corporate Finance</option>
+          <option value="competitive">Competitive Dynamics</option>
+        </select>
+      </div>
+      <div class="field"><label>Difficulty</label>
+        <select id="t-diff">
+          <option value="intro">Introductory</option>
+          <option value="intermediate" selected>Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="field"><label>Full Case Description (shown to students)</label>
+        <textarea id="t-desc">Two major airlines — AlphaAir and BetaFly — are the only carriers on a lucrative transcontinental route. At the start of each season, each airline independently sets its fare: either a Premium price ($450) or a Discount price ($280). Neither airline observes the other's choice before committing.
+
+Market research shows: when both charge premium, each captures loyal passengers and earns $8M profit. When both discount, price competition erodes margins and each earns only $3M. When one discounts while the other holds premium, the discounting airline steals market share and earns $11M, while the premium carrier is left with just $1.5M from a thin slice of price-insensitive travellers.</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Players & Strategies</div>
+    <div class="card-sub">The two decision-makers and the moves available to each</div>
+    <div class="form-row">
+      <div class="field"><label>Player 1 (the student plays this role)</label><input id="t-p1" value="AlphaAir"/></div>
+      <div class="field"><label>Player 2 (the competitor)</label><input id="t-p2" value="BetaFly"/></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Strategy A label</label><input id="t-sa" value="Premium ($450)"/></div>
+      <div class="field"><label>Strategy B label</label><input id="t-sb" value="Discount ($280)"/></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Payoff Matrix</div>
+    <div class="card-sub">Enter payoffs for each combination. Format: Player 1's payoff, then Player 2's payoff.</div>
+    <div class="form-row">
+      <div class="field"><label>Both play A → P1 payoff</label><input type="number" id="p-aa1" value="8"/></div>
+      <div class="field"><label>Both play A → P2 payoff</label><input type="number" id="p-aa2" value="8"/></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>P1 plays A, P2 plays B → P1 payoff</label><input type="number" id="p-ab1" value="1.5"/></div>
+      <div class="field"><label>P1 plays A, P2 plays B → P2 payoff</label><input type="number" id="p-ab2" value="11"/></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>P1 plays B, P2 plays A → P1 payoff</label><input type="number" id="p-ba1" value="11"/></div>
+      <div class="field"><label>P1 plays B, P2 plays A → P2 payoff</label><input type="number" id="p-ba2" value="1.5"/></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Both play B → P1 payoff</label><input type="number" id="p-bb1" value="3"/></div>
+      <div class="field"><label>Both play B → P2 payoff</label><input type="number" id="p-bb2" value="3"/></div>
+    </div>
+    <div class="form-row">
+      <div class="field"><label>Payoff Units (e.g. "$M profit")</label><input id="t-units" value="$M profit/month"/></div>
+      <div class="field"><label>Competitor Rationality</label>
+        <select id="t-rational">
+          <option value="rational">Fully Rational</option>
+          <option value="bounded" selected>Bounded (70% rational)</option>
+          <option value="random">Unpredictable</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Learning Design</div>
+    <div class="card-sub">Used to calibrate feedback and the "ideal answer" baseline</div>
+    <div class="form-row full">
+      <div class="field"><label>Core Learning Objective</label>
+        <input id="t-obj" value="Understand how the Prisoner's Dilemma causes individually rational firms to reach a collectively suboptimal equilibrium, and why this matters for pricing strategy."/>
+      </div>
+    </div>
+    <div class="form-row full">
+      <div class="field"><label>Key Concepts Students Should Engage With (comma-separated)</label>
+        <input id="t-concepts" value="dominant strategy, Nash equilibrium, Prisoner's Dilemma, collective optimum, defection, cooperation, price war"/>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <button class="btn btn-ink" onclick="generateSim()">▶ Generate Simulation</button>
+    <button class="btn btn-outline btn-sm" onclick="loadDemo()">Load Demo</button>
+    <button class="btn btn-outline btn-sm" onclick="clearTeacher()">Clear</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     STUDENT PANEL
+══════════════════════════════════════════ -->
+<div class="panel" id="panel-student">
+<div class="page">
+
+  <div id="no-sim">
+    <div class="no-sim">
+      <div class="no-sim-icon">📖</div>
+      <div class="no-sim-title">No Case Loaded</div>
+      <div class="no-sim-sub">Ask your teacher to build a case, or load the airline pricing demo.</div>
+      <button class="btn btn-ink" onclick="loadDemo(); generateSim();">Load Demo Case</button>
+    </div>
+  </div>
+
+  <div id="sim-area" style="display:none;">
+
+    <!-- CASE BANNER -->
+    <div class="case-banner" id="s-banner">
+      <div class="cb-eyebrow" id="s-eyebrow">Case Study · Game Theory</div>
+      <div class="cb-title" id="s-title">Airline Pricing War</div>
+      <div class="cb-desc" id="s-desc"></div>
+    </div>
+
+    <!-- PAYOFF MATRIX -->
+    <div class="card">
+      <div class="card-title">Payoff Matrix</div>
+      <div class="card-sub" id="s-matrix-sub">Each cell shows (Your payoff, Competitor's payoff). Study this carefully before answering.</div>
+      <div class="matrix-wrap" id="s-matrix"></div>
+      <div style="font-size:12px; color:var(--ink-faint); margin-top:8px; display:flex; gap:16px; flex-wrap:wrap;">
+        <span>● Blue = Your payoff (<span id="s-p1-lbl"></span>)</span>
+        <span>● Red = Competitor's payoff (<span id="s-p2-lbl"></span>)</span>
+        <span>● Green border = Nash Equilibrium</span>
+      </div>
+    </div>
+
+    <!-- OPEN RESPONSE ZONE -->
+    <div class="response-section" id="response-zone">
+      <div class="response-header">
+        <div class="response-header-title">Your Strategic Analysis</div>
+        <div class="response-header-badge">Open Response</div>
+      </div>
+      <div class="response-body" id="q-container">
+        <!-- Questions injected here -->
+      </div>
+      <div class="submit-bar">
+        <div>
+          <div class="completion-bar-wrap" style="width:160px;">
+            <div class="completion-bar" id="completion-bar"></div>
+          </div>
+          <div style="font-size:11px; color:var(--ink-faint); margin-top:4px;" id="completion-text">0 of 5 answered</div>
+        </div>
+        <div class="submit-bar-note">Write your genuine reasoning — the system analyses how your thinking aligns with game theory principles.</div>
+        <button class="btn btn-ink" id="submit-btn" onclick="submitAnswers()" disabled>Submit for Analysis →</button>
+      </div>
+    </div>
+
+    <!-- FEEDBACK PANEL -->
+    <div class="feedback-panel" id="feedback-panel">
+
+      <!-- Alignment Meter -->
+      <div class="alignment-meter" id="align-meter">
+        <div class="am-label">Strategic Alignment Analysis</div>
+        <div class="am-title" id="am-title">—</div>
+        <div class="am-track"><div class="am-fill" id="am-fill"></div></div>
+        <div class="am-stats" id="am-stats"></div>
+      </div>
+
+      <!-- Theory Reveal -->
+      <div class="theory-reveal" id="theory-reveal">
+        <div class="tr-label">Game Theory Analysis</div>
+        <div class="tr-title" id="tr-game-type">—</div>
+        <div class="tr-text" id="tr-text">—</div>
+      </div>
+
+      <!-- Per-question feedback -->
+      <div id="qfeed-container" class="qfeed-grid"></div>
+
+      <!-- Learning objective -->
+      <div class="learning-obj-card">
+        <div class="lobj-label">📌 Learning Objective</div>
+        <div class="lobj-text" id="lobj-text">—</div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-ink" onclick="resetStudent()">🔄 Try Again</button>
+        <button class="btn btn-outline" onclick="switchPanel('teacher')">✏️ Edit Case</button>
+      </div>
+
+    </div><!-- /feedback-panel -->
+
+  </div><!-- /sim-area -->
+</div><!-- /page -->
+</div>
+
+<!-- ══════════════════════════════════════════
+     LIBRARY PANEL
+══════════════════════════════════════════ -->
+<div class="panel" id="panel-library">
+<div class="page">
+  <div class="page-title">Case Library</div>
+  <div class="page-subtitle" style="margin-bottom:24px;">Previously saved cases. Click any to load into the simulation.</div>
+  <div class="lib-grid" id="lib-grid">
+    <div style="grid-column:1/-1; text-align:center; padding:48px; color:var(--ink-faint); font-style:italic;">No saved cases yet.</div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     JAVASCRIPT ENGINE
+══════════════════════════════════════════ -->
+<script>
+/*
+  STRATLAB OPEN-RESPONSE ENGINE
+  ══════════════════════════════
+  Core modules:
+  1.  App state & navigation
+  2.  Game model builder
+  3.  Game theory engine (Nash, dominant strategy, classification)
+  4.  Question generator  ← produces 5 open-ended GT questions
+  5.  Answer parser       ← extracts concepts & strategy from free text
+  6.  Deviation analyser  ← compares student thinking to GT optima
+  7.  Feedback renderer
+  8.  Persistence (localStorage)
+  9.  UI helpers
+*/
+
+/* ── 1. STATE ── */
+const S = {
+  model: null,        // current game model with GT solution
+  questions: [],      // generated question objects
+  answers: {},        // { qId: { text, stratChoice } }
+  feedbackDone: false,
+};
+
+/* ── 2. NAVIGATION ── */
+function switchPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.htab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'library') renderLibrary();
+}
+
+/* ── 3. GAME MODEL BUILDER ── */
+function buildModel() {
+  const payoffs = {
+    AA: [n('p-aa1'), n('p-aa2')],
+    AB: [n('p-ab1'), n('p-ab2')],
+    BA: [n('p-ba1'), n('p-ba2')],
+    BB: [n('p-bb1'), n('p-bb2')],
+  };
+  const model = {
+    name:       v('t-name'),
+    category:   v('t-cat'),
+    difficulty: v('t-diff'),
+    description: v('t-desc'),
+    p1:         v('t-p1') || 'Player 1',
+    p2:         v('t-p2') || 'Player 2',
+    stratA:     v('t-sa') || 'Strategy A',
+    stratB:     v('t-sb') || 'Strategy B',
+    payoffs,
+    units:      v('t-units') || 'units',
+    rationality: v('t-rational'),
+    objective:  v('t-obj'),
+    concepts:   v('t-concepts').split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
+    savedAt: null,
+  };
+  // Run GT engine
+  return runGTEngine(model);
+}
+
+/* ── 4. GAME THEORY ENGINE ── */
+function runGTEngine(model) {
+  const { payoffs } = model;
+
+  // ─ Dominant strategies ─
+  // P1: A dominates B if AA[0]>=BA[0] AND AB[0]>=BB[0] (weak) with at least one strict
+  const p1_A_dom_B = payoffs.AA[0] >= payoffs.BA[0] && payoffs.AB[0] >= payoffs.BB[0] &&
+                     (payoffs.AA[0] > payoffs.BA[0] || payoffs.AB[0] > payoffs.BB[0]);
+  const p1_B_dom_A = payoffs.BA[0] >= payoffs.AA[0] && payoffs.BB[0] >= payoffs.AB[0] &&
+                     (payoffs.BA[0] > payoffs.AA[0] || payoffs.BB[0] > payoffs.AB[0]);
+  const p2_A_dom_B = payoffs.AA[1] >= payoffs.AB[1] && payoffs.BA[1] >= payoffs.BB[1] &&
+                     (payoffs.AA[1] > payoffs.AB[1] || payoffs.BA[1] > payoffs.BB[1]);
+  const p2_B_dom_A = payoffs.AB[1] >= payoffs.AA[1] && payoffs.BB[1] >= payoffs.BA[1] &&
+                     (payoffs.AB[1] > payoffs.AA[1] || payoffs.BB[1] > payoffs.BA[1]);
+
+  model.p1Dom = p1_A_dom_B ? 'A' : p1_B_dom_A ? 'B' : null;
+  model.p2Dom = p2_A_dom_B ? 'A' : p2_B_dom_A ? 'B' : null;
+
+  // ─ Nash equilibria ─
+  // (r,c) is Nash if: payoffs[r][0] >= best P1 can do given c, AND payoffs[c][1] >= best P2 given r
+  model.nash = [];
+  if (payoffs.AA[0] >= payoffs.BA[0] && payoffs.AA[1] >= payoffs.AB[1]) model.nash.push('AA');
+  if (payoffs.AB[0] >= payoffs.BB[0] && payoffs.AB[1] >= payoffs.AA[1]) model.nash.push('AB');
+  if (payoffs.BA[0] >= payoffs.AA[0] && payoffs.BA[1] >= payoffs.BB[1]) model.nash.push('BA');
+  if (payoffs.BB[0] >= payoffs.AB[0] && payoffs.BB[1] >= payoffs.BA[1]) model.nash.push('BB');
+
+  // ─ Social optimum (maximises joint payoff) ─
+  const joint = {
+    AA: payoffs.AA[0] + payoffs.AA[1],
+    AB: payoffs.AB[0] + payoffs.AB[1],
+    BA: payoffs.BA[0] + payoffs.BA[1],
+    BB: payoffs.BB[0] + payoffs.BB[1],
+  };
+  model.socialOpt = Object.entries(joint).sort((a,b) => b[1]-a[1])[0][0];
+
+  // ─ Maximin (P1's risk-averse best choice) ─
+  const mm_A = Math.min(payoffs.AA[0], payoffs.AB[0]);
+  const mm_B = Math.min(payoffs.BA[0], payoffs.BB[0]);
+  model.maximin = mm_A >= mm_B ? 'A' : 'B';
+
+  // ─ Best response of P2 to each P1 move ─
+  model.p2BestResponse = {
+    A: payoffs.AA[1] >= payoffs.AB[1] ? 'A' : 'B',   // if P1 plays A, P2 best response
+    B: payoffs.BA[1] >= payoffs.BB[1] ? 'A' : 'B',   // if P1 plays B, P2 best response
+  };
+
+  // ─ Classify game ─
+  model.gameType = classifyGame(model);
+
+  // ─ GT-optimal recommendation for P1 ─
+  // Priority: dominant strategy > Nash > maximin
+  model.gtOptimal = model.p1Dom || (model.nash.length > 0 ? model.nash[0][0] : model.maximin);
+
+  // ─ Deviation severity thresholds ─
+  model.nashPayoffForP1 = model.nash.length > 0 ? payoffs[model.nash[0]][0] : null;
+
+  return model;
+}
+
+function classifyGame(m) {
+  const p = m.payoffs;
+  const nash = m.nash;
+
+  // Prisoner's Dilemma: BB is Nash, AA would be better for both
+  const isPD = nash.includes('BB') && !nash.includes('AA') &&
+               p.BA[0] > p.AA[0] && p.AA[0] > p.BB[0] && p.BB[0] > p.AB[0] &&
+               p.AB[1] > p.AA[1] && p.AA[1] > p.BB[1] && p.BB[1] > p.BA[1];
+
+  // Zero-sum
+  const isZS = ['AA','AB','BA','BB'].every(k => Math.abs(p[k][0]+p[k][1]) < 0.01);
+
+  // Coordination (two on-diagonal Nash)
+  const isCoord = nash.includes('AA') && nash.includes('BB');
+
+  // Battle of sexes (two off-diagonal Nash)
+  const isBoS = nash.includes('AB') && nash.includes('BA');
+
+  // Stag Hunt
+  const isSH = nash.includes('AA') && nash.includes('BB') && p.AA[0] > p.BB[0];
+
+  if (isPD)    return { id:'pd',    name:"Prisoner's Dilemma",      desc: "A dominant strategy drives both players to mutual defection, even though mutual cooperation would benefit everyone. This is the quintessential game of individual rationality vs collective welfare." };
+  if (isZS)    return { id:'zs',    name:"Zero-Sum Game",           desc: "Every gain for one player is an exact loss for the other. There is no mutually beneficial outcome — the game is purely competitive." };
+  if (isSH)    return { id:'stag',  name:"Stag Hunt",               desc: "Mutual cooperation is the best Nash equilibrium, but it requires trust. A safer but inferior equilibrium also exists. The key challenge is coordinating expectations." };
+  if (isCoord) return { id:'coord', name:"Coordination Game",       desc: "Both players benefit from choosing the same strategy, but which equilibrium to coordinate on is the central challenge." };
+  if (isBoS)   return { id:'bos',   name:"Battle of the Sexes",     desc: "Two asymmetric Nash equilibria exist. Players have conflicting preferences over which equilibrium to reach — communication or commitment devices help." };
+  if (m.p1Dom && m.p2Dom) return { id:'dom', name:"Dominance-Solvable Game", desc: "Both players have dominant strategies. The outcome is fully predictable by rational iterated elimination of dominated strategies." };
+  return { id:'mixed', name:"Mixed Strategy Game", desc: "No pure-strategy Nash equilibrium exists. Rational players should randomize between strategies according to specific mixing probabilities." };
+}
+
+/* ── 5. QUESTION GENERATOR ── */
+function generateQuestions(model) {
+  const { p1, p2, stratA, stratB, payoffs, units, p1Dom, p2Dom, nash, gtOptimal, gameType, socialOpt } = model;
+
+  const sa = stratA, sb = stratB;
+  const gtStrat = gtOptimal === 'A' ? sa : sb;
+  const nashStr = nash.length > 0
+    ? nash.map(n => `(${n[0]==='A'?sa:sb}, ${n[1]==='A'?sa:sb})`).join(' and ')
+    : 'none (pure-strategy)';
+
+  const qs = [
+    {
+      id: 'q1', category: 'strategy_choice',
+      q: `As ${p1}, which pricing strategy would you choose — ${sa} or ${sb} — and why?`,
+      hint: `Think about what happens to your payoff under each of ${p2}'s possible moves. Consider the best and worst outcomes.`,
+      placeholder: `e.g. "I would choose ${sa} because even if ${p2} plays ${sb}, my downside is limited to… However, if they also play ${sa}…"`,
+      // GT solution for this question
+      idealConcepts: ['dominant strategy', 'best response', 'payoff comparison'],
+      idealStrategyMove: gtOptimal,
+      idealRationale: p1Dom
+        ? `The GT-optimal choice is <strong>${gtStrat}</strong> because it is a <strong>dominant strategy</strong>: it yields a higher (or equal) payoff regardless of ${p2}'s move. Comparing: if ${p2} plays ${sa}, you earn ${payoffs.AA[0]} (playing ${sa}) vs ${payoffs.BA[0]} (playing ${sb}). If ${p2} plays ${sb}, you earn ${payoffs.AB[0]} vs ${payoffs.BB[0]}. ${gtStrat} is at least as good in both cases.`
+        : `There is no dominant strategy. The GT-optimal recommendation is <strong>${gtStrat}</strong> based on best-response analysis and Nash equilibrium: ${nashStr}.`,
+    },
+    {
+      id: 'q2', category: 'competitor_prediction',
+      q: `What strategy do you predict ${p2} will choose, and what is your reasoning?`,
+      hint: `Consider ${p2}'s incentives. Look at their payoffs in the matrix — what is in their best interest?`,
+      placeholder: `e.g. "I predict ${p2} will choose ${sb} because their payoff from ${sb} is higher than from ${sa} regardless of what we do…"`,
+      idealConcepts: ["competitor's dominant strategy", 'best response', 'rationality assumption'],
+      idealStrategyMove: p2Dom,
+      idealRationale: p2Dom
+        ? `A rational ${p2} has a dominant strategy: <strong>${p2Dom === 'A' ? sa : sb}</strong>. Their payoffs: if ${p1} plays ${sa}, ${p2} earns ${payoffs.AA[1]} (${sa}) vs ${payoffs.AB[1]} (${sb}). If ${p1} plays ${sb}, ${p2} earns ${payoffs.BA[1]} vs ${payoffs.BB[1]}. The dominant strategy dominates in both cases.`
+        : `${p2} has no dominant strategy. A rational ${p2} will choose their best response to whatever they expect ${p1} to play. The Nash equilibrium prediction is: ${nashStr}.`,
+    },
+    {
+      id: 'q3', category: 'equilibrium',
+      q: `What outcome do you think the market will settle on if both firms act rationally and self-interestedly? What does game theory predict?`,
+      hint: `A Nash equilibrium is a state where neither firm can improve its payoff by unilaterally switching strategy. Look for such a point in the matrix.`,
+      placeholder: `e.g. "I think the market will reach a state where both firms price at ${sb} because neither can unilaterally improve by switching to ${sa}…"`,
+      idealConcepts: ['Nash equilibrium', 'stable outcome', 'no unilateral deviation', 'self-reinforcing'],
+      idealStrategyMove: nash.length > 0 ? nash[0][0] : null,
+      idealRationale: nash.length > 0
+        ? `The Nash Equilibrium is <strong>${nashStr}</strong>. At this outcome, neither airline can improve its payoff by switching strategies unilaterally. In the payoff matrix: ${p1}'s best response to ${p2}'s Nash move is also their Nash move — and vice versa. This makes the outcome self-reinforcing.`
+        : `This game has no pure-strategy Nash equilibrium. Rational players would mix between strategies with specific probabilities.`,
+    },
+    {
+      id: 'q4', category: 'collective_optimum',
+      q: `Is the predicted equilibrium outcome good for both firms collectively? If not, what would the collectively better outcome look like, and why doesn't the market reach it?`,
+      hint: `Compare the total combined payoff across different outcomes. Is there an outcome where the combined earnings are higher than at equilibrium? Why might firms fail to coordinate on it?`,
+      placeholder: `e.g. "The equilibrium is suboptimal — if both priced at ${sa} they'd earn more combined. But neither trusts the other to cooperate because…"`,
+      idealConcepts: ['collective optimum', 'social welfare', "prisoner's dilemma", 'incentive to defect', 'cooperation failure', 'trust'],
+      idealStrategyMove: socialOpt[0],
+      idealRationale: (() => {
+        const so = model.payoffs[socialOpt];
+        const ne = nash.length > 0 ? model.payoffs[nash[0]] : null;
+        const soLabel = `(${socialOpt[0]==='A'?sa:sb}, ${socialOpt[1]==='A'?sa:sb})`;
+        const neLabel = nash.length > 0 ? `(${nash[0][0]==='A'?sa:sb}, ${nash[0][1]==='A'?sa:sb})` : 'Nash';
+        return `The collectively optimal outcome is <strong>${soLabel}</strong> with a combined payoff of ${so[0]+so[1]} ${model.units}. ${ne ? `The Nash Equilibrium ${neLabel} yields only ${ne[0]+ne[1]} ${model.units} combined — a loss of ${(so[0]+so[1])-(ne[0]+ne[1])} ${model.units}.` : ''} The market fails to reach the optimum because each firm has a private incentive to deviate — this is the essence of the Prisoner's Dilemma: individual rationality undermines collective welfare.`;
+      })(),
+    },
+    {
+      id: 'q5', category: 'strategic_recommendation',
+      q: `If you were a strategic advisor to ${p1}, what specific recommendation would you make, and why? Are there any longer-term considerations that might change the analysis?`,
+      hint: `Consider factors like repeated interaction, signalling, contracts, regulation, and reputation. Would your advice change if this pricing decision happens every quarter for many years?`,
+      placeholder: `e.g. "My recommendation would be to… In the short run this is optimal because… However, if the firms interact repeatedly, they might be able to…"`,
+      idealConcepts: ['recommendation', 'dominant strategy', 'repeated game', 'cooperation', 'signalling', 'reputation', 'folk theorem', 'collusion', 'regulation'],
+      idealStrategyMove: gtOptimal,
+      idealRationale: `Short-run recommendation: play <strong>${gtStrat}</strong> (the dominant/Nash strategy). However, if this is a <strong>repeated game</strong>, the analysis changes significantly. The Folk Theorem suggests that in infinitely (or sufficiently long) repeated games, cooperation can be sustained as a Nash equilibrium through trigger strategies — e.g. "match the competitor's last move" (Tit-for-Tat). Firms could implicitly coordinate on (${sa}, ${sa}) to earn ${payoffs.AA[0]} each rather than ${payoffs.BB[0]} each — but explicit price-fixing would likely violate antitrust law.`,
+    },
+  ];
+
+  return qs;
+}
+
+/* ── 6. ANSWER PARSER ── */
+/*
+  Parses free-text answers to extract:
+  - Which strategy the student chose / predicted (A or B keywords)
+  - Which GT concepts they mentioned
+  - Quality indicators (reasoning depth, specificity)
+*/
+
+function parseAnswer(text, question, model) {
+  const lower = text.toLowerCase();
+  const { stratA, stratB, p1, p2 } = model;
+
+  // ─ Detect which strategy was mentioned ─
+  const saLower = stratA.toLowerCase();
+  const sbLower = stratB.toLowerCase();
+  // Also match generic "premium"/"discount", "high"/"low", "cooperate"/"defect"
+  const aKeywords = [saLower, 'premium', 'high price', 'cooperat', 'maintain', 'hold'];
+  const bKeywords = [sbLower, 'discount', 'low price', 'defect', 'undercut', 'cut'];
+
+  let mentionsA = aKeywords.some(k => lower.includes(k));
+  let mentionsB = bKeywords.some(k => lower.includes(k));
+  let detectedStrat = mentionsA && !mentionsB ? 'A' : !mentionsA && mentionsB ? 'B' : mentionsA && mentionsB ? 'both' : null;
+
+  // ─ Concept detection ─
+  const conceptMap = {
+    'dominant strategy':      ['dominant strategy', 'dominates', 'dominant', 'always better', 'best regardless'],
+    'Nash equilibrium':       ['nash', 'equilibrium', 'stable outcome', 'no incentive to deviate', 'neither can improve', 'self-reinforcing'],
+    "Prisoner's Dilemma":     ["prisoner", "dilemma", "trap", "individually rational", "collectively suboptimal"],
+    'collective optimum':     ['collective', 'joint', 'total payoff', 'combined', 'social optimum', 'both better off', 'pareto'],
+    'best response':          ['best response', 'best reply', 'best choice given', 'respond to'],
+    'defection':              ['defect', 'betray', 'undercut', 'deviate'],
+    'cooperation':            ['cooperat', 'collude', 'coordinate', 'agree', 'tacit'],
+    'repeated game':          ['repeat', 'long run', 'long-run', 'future', 'ongoing', 'tit for tat', 'multiple rounds', 'every quarter', 'every year'],
+    'signalling':             ['signal', 'commitment', 'credible', 'announce'],
+    'reputation':             ['reputation', 'trust', 'history', 'track record'],
+    'risk':                   ['risk', 'downside', 'worst case', 'safe', 'conservative', 'maximin', 'secure'],
+    'rationality assumption': ['rational', 'self-interest', 'incentive', 'maximize', 'maximise'],
+    'folk theorem':           ['folk theorem', 'infinite', 'grim trigger', 'tit for tat', 'trigger strategy'],
+    'regulation':             ['regulat', 'antitrust', 'competition law', 'cartel', 'illegal'],
+    'payoff comparison':      ['payoff', 'earn', 'profit', 'outcome', 'result', 'return'],
+  };
+
+  const detectedConcepts = {};
+  for (const [concept, keywords] of Object.entries(conceptMap)) {
+    const found = keywords.some(k => lower.includes(k));
+    detectedConcepts[concept] = found;
+  }
+
+  // ─ Depth score ─ (proxy: word count, number of distinct concepts mentioned, numbers cited)
+  const wordCount = text.trim().split(/\s+/).filter(w => w.length > 1).length;
+  const conceptsHit = Object.values(detectedConcepts).filter(Boolean).length;
+  const citesNumbers = /\d+(\.\d+)?/.test(text);
+  const hasReasoning = /because|since|therefore|given that|as a result|which means|this means|implies|if.*then/.test(lower);
+
+  const depthScore = Math.min(30,
+    (wordCount >= 60 ? 10 : wordCount >= 30 ? 6 : wordCount >= 15 ? 3 : 1) +
+    conceptsHit * 4 +
+    (citesNumbers ? 5 : 0) +
+    (hasReasoning ? 5 : 0)
+  );
+
+  return { detectedStrat, detectedConcepts, wordCount, depthScore, citesNumbers, hasReasoning };
+}
+
+/* ── 7. DEVIATION ANALYSER ── */
+/*
+  For each question, compare the student's parsed answer to the GT-ideal answer.
+  Produces a deviation object with:
+  - alignment: 'on-track' | 'close' | 'partial' | 'off-track'
+  - score: 0–100
+  - hitConcepts, missConcepts
+  - stratAlignment: did they pick the right strategy?
+  - deviationPoints: specific gaps
+  - guidanceText: corrective explanation
+*/
+
+function analyseDeviation(question, parsed, model) {
+  const { id, idealConcepts, idealStrategyMove, idealRationale, category } = question;
+  const { detectedStrat, detectedConcepts, wordCount, depthScore } = parsed;
+
+  // ─ Strategy alignment ─
+  let stratScore = 0;
+  let stratFeedback = '';
+  if (idealStrategyMove === null) {
+    stratScore = 20; // No single correct strategy, partial credit
+    stratFeedback = 'No single correct strategy — multiple are valid depending on reasoning.';
+  } else if (detectedStrat === idealStrategyMove) {
+    stratScore = 35;
+    stratFeedback = 'Correct strategy identified.';
+  } else if (detectedStrat === 'both') {
+    stratScore = 20;
+    stratFeedback = 'You discussed both strategies — make sure you commit to a clear recommendation.';
+  } else if (detectedStrat === null) {
+    stratScore = 5;
+    stratFeedback = 'No clear strategy choice detected in your answer.';
+  } else {
+    stratScore = 0;
+    stratFeedback = `You chose the suboptimal strategy. The GT-optimal choice is ${idealStrategyMove === 'A' ? model.stratA : model.stratB}.`;
+  }
+
+  // ─ Concept alignment ─
+  const hit = [], miss = [], partial = [];
+  let conceptScore = 0;
+  for (const concept of idealConcepts) {
+    const found = detectedConcepts[concept];
+    if (found) { hit.push(concept); conceptScore += Math.floor(40 / idealConcepts.length); }
+    else { miss.push(concept); }
+  }
+  // Bonus for concepts not in ideal but still relevant (shows broader thinking)
+  const bonusConcepts = ['repeated game','reputation','signalling','folk theorem','regulation'];
+  if (category !== 'strategic_recommendation') {
+    for (const bc of bonusConcepts) {
+      if (detectedConcepts[bc]) partial.push(bc);
+    }
+  }
+
+  // ─ Depth / quality ─
+  const qualityScore = Math.min(25, depthScore);
+
+  const rawScore = Math.min(100, stratScore + conceptScore + qualityScore);
+
+  // ─ Overall alignment tier ─
+  const alignment = rawScore >= 78 ? 'on-track' : rawScore >= 55 ? 'close' : rawScore >= 32 ? 'partial' : 'off-track';
+  const alignLabel = { 'on-track': '✓ On Track', 'close': '≈ Close', 'partial': '◑ Partial', 'off-track': '✗ Off Track' };
+
+  // ─ Deviation points (specific gaps to highlight) ─
+  const deviationPoints = [];
+
+  if (stratScore < 35 && idealStrategyMove) {
+    const opt = idealStrategyMove === 'A' ? model.stratA : model.stratB;
+    deviationPoints.push({
+      icon: '⚠️',
+      text: `Your strategy choice deviates from the game-theoretically optimal play (${opt}). ${stratFeedback}`
+    });
+  }
+
+  if (miss.length > 0) {
+    deviationPoints.push({
+      icon: '💡',
+      text: `Your answer did not engage with these key concepts: <strong>${miss.join(', ')}</strong>. Incorporating these would strengthen the analysis.`
+    });
+  }
+
+  if (partial.length > 0) {
+    deviationPoints.push({
+      icon: '⭐',
+      text: `You showed broader strategic thinking by touching on: <strong>${partial.join(', ')}</strong>. This demonstrates sophistication beyond the core question.`
+    });
+  }
+
+  if (wordCount < 20) {
+    deviationPoints.push({
+      icon: '📝',
+      text: 'Your answer is quite brief. A stronger response would explain your reasoning step-by-step and reference specific payoff values from the matrix.'
+    });
+  } else if (!parsed.citesNumbers) {
+    deviationPoints.push({
+      icon: '🔢',
+      text: 'Consider referencing the specific payoff numbers from the matrix to ground your reasoning quantitatively.'
+    });
+  }
+
+  if (!parsed.hasReasoning && wordCount > 10) {
+    deviationPoints.push({
+      icon: '🔗',
+      text: 'Strong answers use explicit logical connectors ("because", "therefore", "which means") to show causal reasoning rather than just conclusions.'
+    });
+  }
+
+  if (deviationPoints.length === 0) {
+    deviationPoints.push({ icon: '✅', text: 'Your reasoning closely follows the game-theoretically optimal path. Well done.' });
+  }
+
+  return {
+    score: rawScore,
+    alignment, alignLabel: alignLabel[alignment],
+    hit, miss, partial,
+    stratScore, conceptScore, qualityScore,
+    deviationPoints,
+    idealRationale,
+    stratFeedback,
+    wordCount,
+  };
+}
+
+/* ── 8. GENERATE SIMULATION ── */
+function generateSim() {
+  showOverlay();
+  setTimeout(() => {
+    try {
+      const model = buildModel();
+      S.model = model;
+      S.questions = generateQuestions(model);
+      S.answers = {};
+      S.feedbackDone = false;
+
+      renderStudentPanel(model);
+      hideOverlay();
+      switchPanel('student');
+      toast('✅ Simulation ready for students!');
+    } catch(e) {
+      hideOverlay();
+      console.error(e);
+      toast('❌ Error generating simulation. Check inputs.');
+    }
+  }, 500);
+}
+
+/* ── 9. STUDENT PANEL RENDERER ── */
+function renderStudentPanel(model) {
+  document.getElementById('no-sim').style.display = 'none';
+  document.getElementById('sim-area').style.display = 'block';
+
+  // Banner
+  document.getElementById('s-eyebrow').textContent = model.category.charAt(0).toUpperCase() + model.category.slice(1) + ' · Game Theory · ' + model.difficulty;
+  document.getElementById('s-title').textContent = model.name;
+  document.getElementById('s-desc').textContent = model.description.substring(0, 400) + (model.description.length > 400 ? '…' : '');
+  document.getElementById('s-p1-lbl').textContent = model.p1;
+  document.getElementById('s-p2-lbl').textContent = model.p2;
+  document.getElementById('s-matrix-sub').textContent = `Each cell shows (${model.p1}'s payoff, ${model.p2}'s payoff) in ${model.units}. Green border = Nash Equilibrium.`;
+
+  // Matrix
+  renderMatrix(model);
+
+  // Questions
+  renderQuestions(model);
+
+  // Reset feedback
+  document.getElementById('feedback-panel').classList.remove('visible');
+  updateCompletion();
+}
+
+function renderMatrix(model) {
+  const { p1, p2, stratA, stratB, payoffs, nash } = model;
+  const isN = k => nash.includes(k);
+  document.getElementById('s-matrix').innerHTML = `
+  <table class="pmatrix">
+    <thead>
+      <tr>
+        <td class="mx-corner"></td>
+        <td class="mx-col-player" colspan="2">${p2} →</td>
+      </tr>
+      <tr>
+        <td class="mx-row-player" rowspan="3">${p1} ↓</td>
+        <td class="mx-corner"></td>
+        <th class="mx-col-hd">${stratA}</th>
+        <th class="mx-col-hd">${stratB}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="mx-row-hd">${stratA}</th>
+        <td class="mx-cell ${isN('AA')?'nash':''}">
+          <div class="payoff-nums"><span class="pn1">${payoffs.AA[0]}</span><span class="payoff-sep">,</span><span class="pn2">${payoffs.AA[1]}</span></div>
+          <div class="payoff-lbl">${model.units}</div>
+          ${isN('AA') ? '<div class="nash-tag">★ Nash</div>' : ''}
+        </td>
+        <td class="mx-cell ${isN('AB')?'nash':''}">
+          <div class="payoff-nums"><span class="pn1">${payoffs.AB[0]}</span><span class="payoff-sep">,</span><span class="pn2">${payoffs.AB[1]}</span></div>
+          <div class="payoff-lbl">${model.units}</div>
+          ${isN('AB') ? '<div class="nash-tag">★ Nash</div>' : ''}
+        </td>
+      </tr>
+      <tr>
+        <th class="mx-row-hd">${stratB}</th>
+        <td class="mx-cell ${isN('BA')?'nash':''}">
+          <div class="payoff-nums"><span class="pn1">${payoffs.BA[0]}</span><span class="payoff-sep">,</span><span class="pn2">${payoffs.BA[1]}</span></div>
+          <div class="payoff-lbl">${model.units}</div>
+          ${isN('BA') ? '<div class="nash-tag">★ Nash</div>' : ''}
+        </td>
+        <td class="mx-cell ${isN('BB')?'nash':''}">
+          <div class="payoff-nums"><span class="pn1">${payoffs.BB[0]}</span><span class="payoff-sep">,</span><span class="pn2">${payoffs.BB[1]}</span></div>
+          <div class="payoff-lbl">${model.units}</div>
+          ${isN('BB') ? '<div class="nash-tag">★ Nash</div>' : ''}
+        </td>
+      </tr>
+    </tbody>
+  </table>`;
+}
+
+function renderQuestions(model) {
+  const container = document.getElementById('q-container');
+  container.innerHTML = '';
+  S.questions.forEach((q, i) => {
+    const block = document.createElement('div');
+    block.className = 'q-block';
+    block.innerHTML = `
+      <div class="q-number">Question ${i + 1} of ${S.questions.length} · ${q.category.replace(/_/g,' ')}</div>
+      <div class="q-text">${q.q}</div>
+      <div class="q-hint"><strong>💡 Hint:</strong> ${q.hint}</div>
+      <textarea class="q-textarea" id="ans-${q.id}" placeholder="${q.placeholder}"
+        oninput="onAnswerInput('${q.id}', this)" rows="4"></textarea>
+      <div class="q-word-count" id="wc-${q.id}">0 words</div>
+    `;
+    container.appendChild(block);
+  });
+}
+
+function onAnswerInput(qId, el) {
+  const words = el.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+  document.getElementById('wc-' + qId).textContent = words + (words === 1 ? ' word' : ' words');
+  S.answers[qId] = el.value;
+  updateCompletion();
+}
+
+function updateCompletion() {
+  const total = S.questions.length;
+  const answered = Object.values(S.answers).filter(a => a && a.trim().split(/\s+/).length >= 5).length;
+  const pct = total > 0 ? (answered / total) * 100 : 0;
+  document.getElementById('completion-bar').style.width = pct + '%';
+  document.getElementById('completion-text').textContent = answered + ' of ' + total + ' answered (5+ words)';
+  document.getElementById('submit-btn').disabled = answered < 1;
+}
+
+/* ── 10. SUBMIT & FEEDBACK ── */
+function submitAnswers() {
+  showOverlay();
+  setTimeout(() => {
+    try {
+      const model = S.model;
+      const results = [];
+
+      S.questions.forEach(q => {
+        const rawText = (S.answers[q.id] || '').trim();
+        const parsed = rawText.length > 0 ? parseAnswer(rawText, q, model) : {
+          detectedStrat: null, detectedConcepts: {}, wordCount: 0, depthScore: 0, citesNumbers: false, hasReasoning: false
+        };
+        const deviation = analyseDeviation(q, parsed, model);
+        results.push({ question: q, rawText, parsed, deviation });
+      });
+
+      renderFeedback(model, results);
+      hideOverlay();
+
+      document.getElementById('feedback-panel').classList.add('visible');
+      setTimeout(() => {
+        document.getElementById('feedback-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+
+    } catch(e) {
+      hideOverlay();
+      console.error(e);
+      toast('❌ Analysis error. Please try again.');
+    }
+  }, 800);
+}
+
+function renderFeedback(model, results) {
+  // ── Overall alignment meter ──
+  const totalScore = Math.round(results.reduce((acc, r) => acc + r.deviation.score, 0) / results.length);
+  const tier = totalScore >= 80 ? 'expert' : totalScore >= 60 ? 'advanced' : totalScore >= 38 ? 'intermediate' : 'beginner';
+  const tierLabel = { expert: 'Expert Strategic Thinker', advanced: 'Advanced Analyst', intermediate: 'Developing Analyst', beginner: 'Foundational Level' };
+  const tierColor = { expert: '#2d7a4f', advanced: '#1a5c8b', intermediate: '#b5830a', beginner: '#8b1a1a' };
+
+  document.getElementById('am-title').textContent = totalScore + ' / 100 — ' + tierLabel[tier];
+  const fill = document.getElementById('am-fill');
+  fill.className = 'am-fill tier-' + tier;
+  setTimeout(() => { fill.style.width = totalScore + '%'; }, 150);
+
+  const onTrack = results.filter(r => r.deviation.alignment === 'on-track').length;
+  const close   = results.filter(r => r.deviation.alignment === 'close').length;
+  const partial = results.filter(r => r.deviation.alignment === 'partial').length;
+  const off     = results.filter(r => r.deviation.alignment === 'off-track').length;
+
+  document.getElementById('am-stats').innerHTML = `
+    <div class="am-stat"><div class="am-stat-num" style="color:#5bc88a">${onTrack}</div><div class="am-stat-lbl">On Track</div></div>
+    <div class="am-stat"><div class="am-stat-num" style="color:var(--gold-border)">${close}</div><div class="am-stat-lbl">Close</div></div>
+    <div class="am-stat"><div class="am-stat-num" style="color:#4a9fd4">${partial}</div><div class="am-stat-lbl">Partial</div></div>
+    <div class="am-stat"><div class="am-stat-num" style="color:#d45c5c">${off}</div><div class="am-stat-lbl">Off Track</div></div>
+    <div class="am-stat"><div class="am-stat-num">${model.gameType.name.split(' ')[0]}</div><div class="am-stat-lbl">Game Type</div></div>
+  `;
+
+  // ── Theory reveal ──
+  document.getElementById('tr-game-type').textContent = model.gameType.name;
+  document.getElementById('tr-text').innerHTML = buildFullTheoryText(model);
+
+  // ── Per-question feedback cards ──
+  const container = document.getElementById('qfeed-container');
+  container.innerHTML = '';
+
+  results.forEach((r, i) => {
+    const { question, rawText, parsed, deviation } = r;
+    const devClass = { 'on-track': 'dev-on-track', 'close': 'dev-close', 'partial': 'dev-partial', 'off-track': 'dev-off-track' }[deviation.alignment];
+
+    const card = document.createElement('div');
+    card.className = 'qfeed-card';
+    card.style.animationDelay = (i * 0.1) + 's';
+
+    // Concept tags
+    const allConcepts = [...question.idealConcepts];
+    const tagsHtml = allConcepts.map(c => {
+      const hit = deviation.hit.includes(c);
+      const cls = hit ? 'ctag-hit' : 'ctag-miss';
+      const prefix = hit ? '✓ ' : '✗ ';
+      return `<span class="ctag ${cls}">${prefix}${c}</span>`;
+    }).join('') + deviation.partial.map(c => `<span class="ctag ctag-partial">+ ${c}</span>`).join('');
+
+    const studentTextHtml = rawText
+      ? `<div class="student-answer-block"><div class="sab-label">Your Answer</div><div class="sab-text">"${rawText.substring(0,500)}${rawText.length>500?'…':''}"</div></div>`
+      : `<div class="student-answer-block" style="background:var(--crimson-bg);border-color:rgba(139,26,26,0.2);"><div class="sab-label" style="color:var(--crimson)">No Answer Provided</div><div class="sab-text">You did not answer this question.</div></div>`;
+
+    const deviationPointsHtml = deviation.deviationPoints.map(dp =>
+      `<li class="da-point"><span class="da-icon">${dp.icon}</span><span>${dp.text}</span></li>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="qfeed-header">
+        <div class="qfeed-num">Q${i+1}</div>
+        <div class="qfeed-q">${question.q}</div>
+        <div class="deviation-badge ${devClass}">${deviation.alignLabel} &nbsp;<strong>${deviation.score}/100</strong></div>
+      </div>
+      <div class="qfeed-body">
+        ${studentTextHtml}
+        <div class="optimal-block">
+          <div class="ob-label">Game Theory Optimal Answer</div>
+          <div class="ob-text">${deviation.idealRationale}</div>
+        </div>
+        <div class="deviation-analysis">
+          <div class="da-title">Deviation Analysis</div>
+          <ul class="da-points">${deviationPointsHtml}</ul>
+          <div class="concept-tags" style="margin-top:10px;">${tagsHtml}</div>
+        </div>
+        ${deviation.alignment !== 'on-track' ? `
+        <div class="guidance-block">
+          <div class="guidance-title">How to strengthen this answer:</div>
+          <div class="guidance-text">
+            ${deviation.miss.length > 0 ? `Incorporate an explicit discussion of <strong>${deviation.miss.slice(0,2).join(' and ')}</strong>. ` : ''}
+            ${!parsed.citesNumbers && rawText ? 'Reference specific payoff values from the matrix to support your argument. ' : ''}
+            ${!parsed.hasReasoning && rawText ? 'Use connective reasoning ("because", "therefore") to make your causal logic explicit. ' : ''}
+            ${parsed.wordCount < 30 && rawText ? 'Expand your answer — aim for at least 50–80 words that walk through your reasoning step-by-step.' : ''}
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // ── Learning objective ──
+  document.getElementById('lobj-text').textContent = model.objective;
+}
+
+function buildFullTheoryText(model) {
+  const { p1, p2, stratA, stratB, payoffs, p1Dom, p2Dom, nash, gameType, gtOptimal, socialOpt, maximin, units } = model;
+
+  const nashStr = nash.length > 0
+    ? nash.map(n => `(${n[0]==='A'?stratA:stratB}, ${n[1]==='A'?stratA:stratB})`).join(' and ')
+    : 'none in pure strategies';
+
+  const gtStrat = gtOptimal === 'A' ? stratA : stratB;
+  const soLabel = `(${socialOpt[0]==='A'?stratA:stratB}, ${socialOpt[1]==='A'?stratA:stratB})`;
+  const soPayoffs = payoffs[socialOpt];
+  const nePayoffs = nash.length > 0 ? payoffs[nash[0]] : null;
+
+  let html = `<strong>${gameType.name}:</strong> ${gameType.desc}<br/><br/>`;
+
+  html += `<strong>Nash Equilibrium:</strong> ${nashStr}. `;
+  if (nash.length > 0) {
+    html += `At this outcome, neither ${p1} nor ${p2} can improve their payoff by switching strategy unilaterally.<br/><br/>`;
+  }
+
+  if (p1Dom) {
+    html += `<strong>${p1}'s Dominant Strategy:</strong> <em>${p1Dom === 'A' ? stratA : stratB}</em> — it yields a higher payoff regardless of what ${p2} does.<br/><br/>`;
+  }
+
+  if (p2Dom) {
+    html += `<strong>${p2}'s Dominant Strategy:</strong> <em>${p2Dom === 'A' ? stratA : stratB}</em> — similarly dominant for the competitor.<br/><br/>`;
+  }
+
+  html += `<strong>Social Optimum:</strong> The outcome ${soLabel} maximises total combined payoff (${soPayoffs[0]+soPayoffs[1]} ${units}). `;
+  if (nePayoffs) {
+    html += `The Nash Equilibrium yields only ${nePayoffs[0]+nePayoffs[1]} ${units} combined — a deadweight loss of ${(soPayoffs[0]+soPayoffs[1]) - (nePayoffs[0]+nePayoffs[1])} ${units} due to the failure of cooperation.<br/><br/>`;
+  }
+
+  html += `<strong>Recommendation:</strong> In the one-shot game, ${p1} should play <em>${gtStrat}</em>. In a repeated context, cooperation on (${stratA}, ${stratA}) can be sustained through trigger strategies (Tit-for-Tat) if the discount factor is sufficiently high.`;
+
+  return html;
+}
+
+/* ── 11. RESET ── */
+function resetStudent() {
+  S.answers = {};
+  S.feedbackDone = false;
+  document.getElementById('feedback-panel').classList.remove('visible');
+  document.querySelectorAll('.q-textarea').forEach(el => { el.value = ''; });
+  document.querySelectorAll('[id^="wc-"]').forEach(el => { el.textContent = '0 words'; });
+  updateCompletion();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('🔄 Answers cleared — try again!');
+}
+
+/* ── 12. PERSISTENCE ── */
+function saveCase() {
+  if (!S.model) { toast('⚠️ Generate a simulation first.'); return; }
+  let lib = JSON.parse(localStorage.getItem('stratlab_v2') || '[]');
+  const entry = { ...S.model, savedAt: new Date().toISOString() };
+  lib = lib.filter(c => c.name !== entry.name);
+  lib.unshift(entry);
+  localStorage.setItem('stratlab_v2', JSON.stringify(lib.slice(0, 20)));
+  toast('✅ Case saved to library!');
+}
+
+function renderLibrary() {
+  const lib = JSON.parse(localStorage.getItem('stratlab_v2') || '[]');
+  const grid = document.getElementById('lib-grid');
+  if (!lib.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--ink-faint);font-style:italic;">No saved cases yet.</div>';
+    return;
+  }
+  grid.innerHTML = '';
+  lib.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'lib-card';
+    d.innerHTML = `
+      <div class="lib-card-name">${c.name}</div>
+      <div class="lib-card-meta">${c.category} · ${c.difficulty} · ${c.gameType?.name || 'GT'} · Saved ${new Date(c.savedAt).toLocaleDateString()}</div>
+      <div class="lib-card-desc">${(c.description||'').substring(0,100)}…</div>`;
+    d.onclick = () => loadFromLibrary(c);
+    grid.appendChild(d);
+  });
+}
+
+function loadFromLibrary(model) {
+  // Re-run GT engine on loaded model
+  const rebuilt = runGTEngine({ ...model });
+  S.model = rebuilt;
+  S.questions = generateQuestions(rebuilt);
+  S.answers = {};
+  renderStudentPanel(rebuilt);
+  switchPanel('student');
+  toast(`📖 Loaded: ${model.name}`);
+}
+
+/* ── 13. DEMO ── */
+const DEMO = {
+  't-name': 'Airline Pricing War',
+  't-cat': 'pricing',
+  't-diff': 'intermediate',
+  't-desc': `Two major airlines — AlphaAir and BetaFly — are the only carriers on a lucrative transcontinental route. At the start of each season, each airline independently sets its fare: either a Premium price ($450) or a Discount price ($280). Neither airline observes the other's choice before committing.\n\nMarket research shows: when both charge premium, each captures loyal passengers and earns $8M profit. When both discount, price competition erodes margins and each earns only $3M. When one discounts while the other holds premium, the discounting airline steals market share and earns $11M, while the premium carrier is left with just $1.5M from a thin slice of price-insensitive travellers.`,
+  't-p1': 'AlphaAir',
+  't-p2': 'BetaFly',
+  't-sa': 'Premium ($450)',
+  't-sb': 'Discount ($280)',
+  'p-aa1': '8',  'p-aa2': '8',
+  'p-ab1': '1.5','p-ab2': '11',
+  'p-ba1': '11', 'p-ba2': '1.5',
+  'p-bb1': '3',  'p-bb2': '3',
+  't-units': '$M profit/month',
+  't-rational': 'bounded',
+  't-obj': "Understand how the Prisoner's Dilemma causes individually rational firms to reach a collectively suboptimal equilibrium, and evaluate strategies for escaping this trap.",
+  't-concepts': "dominant strategy, Nash equilibrium, Prisoner's Dilemma, collective optimum, defection, cooperation, repeated game, price war",
+};
+
+function loadDemo() {
+  Object.entries(DEMO).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  });
+  toast('📦 Demo loaded — click "Generate Simulation"');
+  switchPanel('teacher');
+}
+
+function clearTeacher() {
+  ['t-name','t-desc','t-p1','t-p2','t-sa','t-sb','t-units','t-obj','t-concepts'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['p-aa1','p-aa2','p-ab1','p-ab2','p-ba1','p-ba2','p-bb1','p-bb2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+/* ── HELPERS ── */
+function v(id) { return (document.getElementById(id)?.value || '').trim(); }
+function n(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function showOverlay() { document.getElementById('overlay').classList.add('show'); }
+function hideOverlay() { document.getElementById('overlay').classList.remove('show'); }
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ── BOOT ── */
+window.addEventListener('DOMContentLoaded', () => {
+  loadDemo();
+  setTimeout(() => generateSim(), 80);
+});
+</script>
+</body>
+</html>
