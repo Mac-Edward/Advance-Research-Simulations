@@ -543,24 +543,18 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
   <div id="student-tab-slides">
     <div class="sidebar-layout">
       <div>
-        <!-- Main slide deck -->
-        <div class="slide-deck" id="student-slide-deck" style="margin-bottom:0"></div>
-        <!-- TTS controls bar below deck -->
-        <div class="tts-controls" style="background:var(--navy2);border-radius:0 0 var(--r-xl) var(--r-xl);padding:14px 20px">
-          <button class="tts-btn" id="tts-read-btn" onclick="ttsToggle()">🔊 Read Aloud</button>
-          <button class="tts-btn" onclick="ttsPrev()">⏮</button>
-          <button class="tts-btn" onclick="ttsNext()">⏭</button>
-          <div class="tts-progress" style="flex:1;margin:0 10px"><div class="tts-prog-fill" id="tts-bar-fill"></div></div>
+        <!-- TTS audio bar -->
+        <div style="background:var(--navy);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="tts-btn" id="tts-read-btn" onclick="ttsToggle()" style="font-size:13px;padding:7px 18px">🔊 Read Entire Case Aloud</button>
+          <button class="tts-btn" onclick="ttsStop()" id="tts-stop-btn" style="display:none">⏹ Stop</button>
+          <div class="tts-progress" style="flex:1;min-width:80px;margin:0 4px"><div class="tts-prog-fill" id="tts-bar-fill"></div></div>
           <select id="tts-voice-sel" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:6px;padding:4px 8px;font-size:11px;outline:none" onchange="ttsChangeVoice()"></select>
           <select id="tts-rate-sel" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);border-radius:6px;padding:4px 8px;font-size:11px;outline:none" onchange="ttsChangeRate()">
             <option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option>
           </select>
         </div>
-        <!-- Reading text panel below -->
-        <div class="card" style="margin-top:16px">
-          <div style="font-family:var(--fd);font-size:17px;margin-bottom:12px;color:var(--text1)">📖 Full Case Text</div>
-          <div id="student-case-text-display" style="font-size:14px;line-height:1.85;color:var(--text2);max-height:300px;overflow-y:auto"></div>
-        </div>
+        <!-- Full case text — scrollable, highlighted as it is read -->
+        <div id="student-case-text-display" style="background:#fff;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--r-lg) var(--r-lg);padding:28px 32px;font-size:15px;line-height:1.9;color:var(--text2);max-height:560px;overflow-y:auto"></div>
       </div>
  
       <!-- Chatbot hint panel -->
@@ -660,7 +654,7 @@ const S = {
   currentSlide: 0,
   currentQuestion: 0,
   agentConfig: { persona:'balanced', instructions:'', rubric:'balanced' },
-  tts: { utterance:null, playing:false, voices:[], rate:1, voice:null },
+  tts: { utterance:null, playing:false, voices:[], rate:1, voice:null, paragraphs:[], paraIndex:0 },
   cases: JSON.parse(localStorage.getItem('casesim_cases') || '[]'),
   mediaRecorder: null, audioChunks: [],
 };
@@ -1317,8 +1311,7 @@ function launchStudentView(c) {
     <span class="badge badge-teal">${c.level}</span>
     <span class="badge badge-green">${c.difficulty}</span>`;
  
-  renderSlide(S.slides, 0, 'student-slide-deck');
-  renderStudentCaseText();
+  renderStudentCaseText(); // No slides in student view — full case text is rendered directly
   renderStudentQuestions();
   initTTS();
   updateStudentProgress();
@@ -1328,7 +1321,12 @@ function renderStudentCaseText() {
   const el = document.getElementById('student-case-text-display');
   if (!el) return;
   const text = S.currentCase?.text || '';
-  el.innerHTML = text.split('\n\n').map(p => p.trim() ? `<p style="margin-bottom:16px">${p}</p>` : '').join('');
+  // Split into paragraphs, give each an id so TTS can scroll to current position
+  el.innerHTML = text.split('\n\n')
+    .map((p, i) => p.trim()
+      ? `<p id="ctp-${i}" style="margin-bottom:18px;padding:6px 10px;border-radius:6px;transition:background .3s">${p.trim()}</p>`
+      : '')
+    .join('');
 }
  
 function showStudentTab(tab) {
@@ -1756,18 +1754,95 @@ function initTTS() {
   if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
 }
  
+/* ── TTS: reads entire case text in one click, scrolls + highlights as it reads ── */
+ 
 function ttsToggle() {
-  if (S.tts.playing) ttsStop(); else ttsReadCurrentSlide();
+  if (S.tts.playing) {
+    ttsStop();
+  } else {
+    ttsReadFullCase();
+  }
 }
  
-function ttsReadCurrentSlide() {
-  const slide = S.slides[S.currentSlide];
-  if (!slide) return;
-  const text = `${slide.title}. ${slide.body.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ')}`;
-  ttsSpeakText(text);
+function ttsReadFullCase() {
+  const synth = window.speechSynthesis;
+  if (!synth) { toast('Speech synthesis not supported in this browser','err'); return; }
+ 
+  // Build the full case text from the case object (not slides)
+  const rawText = S.currentCase?.text || '';
+  if (!rawText.trim()) { toast('No case text to read','err'); return; }
+ 
+  // Clean HTML tags and normalise whitespace
+  const cleanText = rawText.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+ 
+  // Split case into paragraphs so we can track scroll position during reading
+  const paragraphs = rawText.split('\n\n').map(p => p.trim()).filter(Boolean);
+  S.tts.paragraphs = paragraphs;
+  S.tts.paraIndex = 0;
+ 
+  synth.cancel();
+ 
+  const u = new SpeechSynthesisUtterance(cleanText);
+  u.voice = S.tts.voice;
+  u.rate = S.tts.rate;
+  u.pitch = 1;
+ 
+  const total = cleanText.length;
+ 
+  // Track progress and scroll to the current paragraph as reading advances
+  u.onboundary = (e) => {
+    updateTTSProgressBar(e.charIndex / total);
+ 
+    // Scroll the case text box so the current paragraph is visible
+    // Estimate which paragraph we are in based on char position
+    let charCount = 0;
+    for (let i = 0; i < paragraphs.length; i++) {
+      charCount += paragraphs[i].length + 2; // +2 for paragraph break
+      if (e.charIndex < charCount) {
+        // Highlight current paragraph, clear previous
+        if (S.tts.paraIndex !== i) {
+          const prevEl = document.getElementById('ctp-' + S.tts.paraIndex);
+          if (prevEl) prevEl.style.background = '';
+          S.tts.paraIndex = i;
+        }
+        const curEl = document.getElementById('ctp-' + i);
+        if (curEl) {
+          curEl.style.background = 'rgba(232,160,32,0.15)';
+          curEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        break;
+      }
+    }
+  };
+ 
+  u.onend = () => {
+    S.tts.playing = false;
+    updateTTSBtn();
+    updateTTSProgressBar(1);
+    // Clear all highlights when done
+    paragraphs.forEach((_,i) => {
+      const el = document.getElementById('ctp-' + i);
+      if (el) el.style.background = '';
+    });
+  };
+ 
+  u.onerror = () => {
+    S.tts.playing = false;
+    updateTTSBtn();
+  };
+ 
+  synth.speak(u);
+  S.tts.utterance = u;
+  S.tts.playing = true;
+  updateTTSBtn();
+ 
+  // Scroll case text box back to top when starting
+  const textBox = document.getElementById('student-case-text-display');
+  if (textBox) textBox.scrollTop = 0;
 }
  
 function ttsSpeakText(text) {
+  // General-purpose TTS (used for feedback narration)
   const synth = window.speechSynthesis;
   if (!synth) { toast('Speech synthesis not supported','err'); return; }
   synth.cancel();
@@ -1790,10 +1865,15 @@ function ttsStop() {
   S.tts.playing = false;
   updateTTSBtn();
   updateTTSProgressBar(0);
+  // Clear any active highlights
+  if (S.tts.paragraphs) {
+    S.tts.paragraphs.forEach((_,i) => {
+      const el = document.getElementById('ctp-' + i);
+      if (el) el.style.background = '';
+    });
+  }
+  // Show stop button logic handled by updateTTSBtn
 }
- 
-function ttsPrev() { changeSlide('student-slide-deck', -1); }
-function ttsNext() { changeSlide('student-slide-deck', 1); }
  
 function ttsChangeVoice() {
   const sel = document.getElementById('tts-voice-sel');
@@ -1804,13 +1884,18 @@ function ttsChangeVoice() {
 function ttsChangeRate() {
   const sel = document.getElementById('tts-rate-sel');
   S.tts.rate = parseFloat(sel.value);
+  // If already playing, restart with new rate
+  if (S.tts.playing) { ttsStop(); ttsReadFullCase(); }
 }
  
 function updateTTSBtn() {
   const btn = document.getElementById('tts-read-btn');
-  if (!btn) return;
-  btn.textContent = S.tts.playing ? '⏸ Pause' : '🔊 Read Aloud';
-  btn.classList.toggle('playing', S.tts.playing);
+  const stopBtn = document.getElementById('tts-stop-btn');
+  if (btn) {
+    btn.textContent = S.tts.playing ? '⏸ Pause' : '🔊 Read Entire Case Aloud';
+    btn.classList.toggle('playing', S.tts.playing);
+  }
+  if (stopBtn) stopBtn.style.display = S.tts.playing ? '' : 'none';
 }
  
 function updateTTSProgressBar(pct) {
@@ -1819,8 +1904,7 @@ function updateTTSProgressBar(pct) {
 }
  
 function updateTTSProgress() {
-  const pct = S.slides.length > 0 ? S.currentSlide / (S.slides.length-1) : 0;
-  updateTTSProgressBar(pct);
+  // No-op kept for compatibility — progress is now driven by character position
 }
  
 function ttsReadFeedback() {
