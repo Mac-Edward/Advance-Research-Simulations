@@ -543,6 +543,20 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
   <div id="student-tab-slides">
     <div class="sidebar-layout">
       <div>
+
+        <!-- ── CASE INTRO VIDEO ── -->
+        <div style="border-radius:var(--r-lg) var(--r-lg) 0 0;overflow:hidden;background:#000;line-height:0">
+          <video
+            width="100%"
+            controls
+            style="display:block;width:100%;max-height:360px;object-fit:cover"
+            poster=""
+          >
+            <source src="https://raw.githubusercontent.com/Mac-Edward/caseai_video_1/main/Case%20AI%20Demo%20Video%20copy.mp4" type="video/mp4"/>
+            Your browser does not support the video tag.
+          </video>
+        </div>
+         
         <!-- TTS audio bar -->
         <div style="background:var(--navy);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <button class="tts-btn" id="tts-read-btn" onclick="ttsToggle()" style="font-size:13px;padding:7px 18px">🔊 Read Entire Case Aloud</button>
